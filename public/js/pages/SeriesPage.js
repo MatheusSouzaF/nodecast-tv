@@ -9,6 +9,7 @@ class SeriesPage {
         this.container = document.getElementById('series-grid');
         this.sourceSelect = document.getElementById('series-source-select');
         this.categorySelect = document.getElementById('series-category-select');
+        this.sortSelect = document.getElementById('series-sort-select');
         this.searchInput = document.getElementById('series-search');
         this.detailsPanel = document.getElementById('series-details');
         this.seasonsContainer = document.getElementById('series-seasons');
@@ -39,6 +40,11 @@ class SeriesPage {
         // Category change handler
         this.categorySelect?.addEventListener('change', () => {
             this.loadSeries();
+        });
+
+        // Sort change handler
+        this.sortSelect?.addEventListener('change', () => {
+            this.filterAndRender();
         });
 
         // Search with debounce
@@ -244,6 +250,8 @@ class SeriesPage {
             return true;
         });
 
+        this.filteredSeries = this.sortItems(this.filteredSeries);
+
         console.log(`[Series] Displaying ${this.filteredSeries.length} of ${this.seriesList.length} series`);
 
         this.currentBatch = 0;
@@ -267,6 +275,33 @@ class SeriesPage {
 
         // Start observing loader
         this.observer.observe(loader);
+    }
+
+    sortItems(items) {
+        const sortBy = this.sortSelect?.value || 'name_asc';
+        const getYear = (s) => parseInt(s.year || s.releaseDate?.substring(0, 4)) || 0;
+        const getRating = (s) => parseFloat(s.rating) || 0;
+
+        const sorted = [...items];
+        switch (sortBy) {
+            case 'name_desc':
+                sorted.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+                break;
+            case 'year_desc':
+                sorted.sort((a, b) => getYear(b) - getYear(a));
+                break;
+            case 'year_asc':
+                sorted.sort((a, b) => getYear(a) - getYear(b));
+                break;
+            case 'rating_desc':
+                sorted.sort((a, b) => getRating(b) - getRating(a));
+                break;
+            case 'name_asc':
+            default:
+                sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                break;
+        }
+        return sorted;
     }
 
     renderNextBatch() {
