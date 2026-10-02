@@ -1,13 +1,21 @@
 services:
   nodecast-tv:
-    image: ghcr.io/technomancer702/nodecast-tv:latest
-    build: https://github.com/technomancer702/nodecast-tv.git#main
+    build:
+      context: .
     container_name: nodecast-tv
     ports:
-      - "3000:3000"
+      - "${NODECAST_PORT:-8083}:3000"
     volumes:
       - ./data:/app/data
     restart: unless-stopped
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       - PORT=3000 # Internal container port
+      - JWT_SECRET=${JWT_SECRET}
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
+      - OIDC_CALLBACK_URL=${OIDC_CALLBACK_URL:-}
+      - OIDC_AUTH_URL=${OIDC_AUTH_URL:-}
+      - OIDC_TOKEN_URL=${OIDC_TOKEN_URL:-}
+      - OIDC_USERINFO_URL=${OIDC_USERINFO_URL:-}
