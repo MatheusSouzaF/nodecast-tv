@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && if [ "$TARGETARCH" = "amd64" ]; then \
         DRIVERS="mesa-va-drivers intel-media-va-driver vainfo"; \
     else \
@@ -41,7 +41,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies (better-sqlite3 will build from source using g++ installed above)
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy application files
 COPY . .
