@@ -424,15 +424,23 @@ class VideoPlayer {
             } else if (document.webkitExitFullscreen) {
                 document.webkitExitFullscreen();
             }
+        } else if (this.video.webkitDisplayingFullscreen) {
+            this.video.webkitExitFullscreen();
         } else {
             const element = this.container;
-            if (element.requestFullscreen) {
+            // iPhone exposes no element fullscreen (fullscreenEnabled is false), only native video fullscreen
+            const canElementFullscreen = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+            if (canElementFullscreen && element.requestFullscreen) {
                 element.requestFullscreen().catch(err => console.error('Fullscreen error:', err));
-            } else if (element.webkitRequestFullscreen) {
+            } else if (canElementFullscreen && element.webkitRequestFullscreen) {
                 element.webkitRequestFullscreen();
             } else if (this.video.webkitEnterFullscreen) {
                 // iOS Safari: use native video fullscreen
-                this.video.webkitEnterFullscreen();
+                try {
+                    this.video.webkitEnterFullscreen();
+                } catch (err) {
+                    console.error('Fullscreen error:', err);
+                }
             }
         }
     }
@@ -1552,17 +1560,6 @@ class VideoPlayer {
 
         const nextIdx = currentIdx >= channels.length - 1 ? 0 : currentIdx + 1;
         window.app.channelList.selectChannel({ channelId: channels[nextIdx].id });
-    }
-
-    /**
-     * Toggle fullscreen
-     */
-    toggleFullscreen() {
-        if (document.fullscreenElement) {
-            document.exitFullscreen();
-        } else if (this.container) {
-            this.container.requestFullscreen();
-        }
     }
 }
 

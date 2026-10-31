@@ -692,14 +692,22 @@ class WatchPage {
             } else if (document.webkitExitFullscreen) {
                 document.webkitExitFullscreen();
             }
+        } else if (this.video?.webkitDisplayingFullscreen) {
+            this.video.webkitExitFullscreen();
         } else {
-            if (container?.requestFullscreen) {
+            // iPhone exposes no element fullscreen (fullscreenEnabled is false), only native video fullscreen
+            const canElementFullscreen = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+            if (canElementFullscreen && container?.requestFullscreen) {
                 container.requestFullscreen();
-            } else if (container?.webkitRequestFullscreen) {
+            } else if (canElementFullscreen && container?.webkitRequestFullscreen) {
                 container.webkitRequestFullscreen();
             } else if (this.video?.webkitEnterFullscreen) {
                 // iOS Safari: use native video fullscreen
-                this.video.webkitEnterFullscreen();
+                try {
+                    this.video.webkitEnterFullscreen();
+                } catch (err) {
+                    console.error('Fullscreen error:', err);
+                }
             }
         }
     }
