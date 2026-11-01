@@ -93,6 +93,7 @@ router.post('/setup', async (req, res) => {
 
         // Generate token for immediate login
         const token = auth.generateToken(adminUser);
+        auth.setAuthCookie(req, res, token);
 
         res.status(201).json({
             message: 'Admin user created successfully',
@@ -122,6 +123,7 @@ router.post('/login', (req, res, next) => {
 
         // Generate JWT token
         const token = auth.generateToken(user);
+        auth.setAuthCookie(req, res, token);
 
         res.json({
             token,
@@ -139,6 +141,7 @@ router.post('/login', (req, res, next) => {
  * POST /api/auth/logout
  */
 router.post('/logout', (req, res) => {
+    auth.clearAuthCookie(res);
     // With JWT, logout is handled client-side by removing the token
     // This endpoint exists for consistency and future server-side token blacklisting
     res.json({ success: true, message: 'Logged out successfully' });
@@ -154,6 +157,14 @@ router.get('/me', auth.requireAuth, async (req, res) => {
 
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
+        }
+
+        // O frontend chama /me no boot com o token do localStorage: renova o
+        // cookie aqui, o que cobre sessoes antigas (anteriores ao cookie) e o
+        // login via OIDC (token chega por ?token= e passa por aqui).
+        const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+        if (bearer) {
+            auth.setAuthCookie(req, res, bearer);
         }
 
         res.json({

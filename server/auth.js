@@ -13,6 +13,43 @@ const { Strategy: LocalStrategy } = require('passport-local');
 // JWT Secret - In production, use environment variable
 const JWT_SECRET = process.env.JWT_SECRET || 'nodecast-tv-secret-key-change-in-production';
 const JWT_EXPIRY = '24h';
+const JWT_EXPIRY_SECONDS = 24 * 60 * 60;
+
+// Cookie com o mesmo JWT do localStorage. Necessario porque <video>, <img>
+// e <track> carregam /api/proxy, /api/transcode, /api/subtitle etc. direto
+// pelo src, sem como mandar o header Authorization.
+const AUTH_COOKIE = 'nodecast_token';
+
+function cookieExtractor(req) {
+    const header = req.headers.cookie || '';
+    for (const pair of header.split(';')) {
+        const [name, ...rest] = pair.trim().split('=');
+        if (name === AUTH_COOKIE) {
+            return decodeURIComponent(rest.join('='));
+        }
+    }
+    return null;
+}
+
+function setAuthCookie(req, res, token) {
+    const attrs = [
+        `${AUTH_COOKIE}=${encodeURIComponent(token)}`,
+        'Path=/',
+        'HttpOnly',
+        'SameSite=Lax',
+        `Max-Age=${JWT_EXPIRY_SECONDS}`,
+    ];
+    // So marca Secure quando a requisicao chegou por HTTPS (ex: Cloudflare
+    // Tunnel); acesso por HTTP puro (LAN/Tailscale) perderia o cookie.
+    if (req.secure) {
+        attrs.push('Secure');
+    }
+    res.append('Set-Cookie', attrs.join('; '));
+}
+
+function clearAuthCookie(res) {
+    res.append('Set-Cookie', `${AUTH_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+}
 
 /**
  * Hash password using bcrypt
@@ -87,7 +124,10 @@ function configureLocalStrategy(getUserByUsername, verifyUserPassword) {
  */
 function configureJwtStrategy(getUserById) {
     const options = {
-        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+        jwtFromRequest: ExtractJwt.fromExtractors([
+            ExtractJwt.fromAuthHeaderAsBearerToken(),
+            cookieExtractor,
+        ]),
         secretOrKey: JWT_SECRET
     };
 
@@ -254,6 +294,8 @@ function requireRole(role) {
 
 module.exports = {
     passport,
+    setAuthCookie,
+    clearAuthCookie,
     hashPassword,
     verifyPassword,
     generateToken,

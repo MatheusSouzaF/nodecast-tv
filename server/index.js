@@ -169,16 +169,21 @@ process.on('SIGTERM', async () => {
 });
 
 // API Routes
+// /api/auth fica publico (login, setup, OIDC); o resto exige login. Antes,
+// so favorites/history checavam auth: /api/sources expunha usuario e senha
+// do provedor IPTV, e /api/proxy/stream buscava qualquer URL (proxy aberto
+// para a rede interna) para quem chegasse pela URL publica.
+const { requireAuth } = require('./auth');
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/sources', require('./routes/sources'));
-app.use('/api/proxy', require('./routes/proxy'));
-app.use('/api/channels', require('./routes/channels'));
+app.use('/api/sources', requireAuth, require('./routes/sources'));
+app.use('/api/proxy', requireAuth, require('./routes/proxy'));
+app.use('/api/channels', requireAuth, require('./routes/channels'));
 app.use('/api/favorites', require('./routes/favorites'));
-app.use('/api/transcode', require('./routes/transcode'));
-app.use('/api/remux', require('./routes/remux'));
-app.use('/api/probe', require('./routes/probe'));
-app.use('/api/subtitle', require('./routes/subtitle'));
-app.use('/api/settings', require('./routes/settings'));
+app.use('/api/transcode', requireAuth, require('./routes/transcode'));
+app.use('/api/remux', requireAuth, require('./routes/remux'));
+app.use('/api/probe', requireAuth, require('./routes/probe'));
+app.use('/api/subtitle', requireAuth, require('./routes/subtitle'));
+app.use('/api/settings', requireAuth, require('./routes/settings'));
 app.use('/api/history', require('./routes/history'));
 
 // Version endpoint
